@@ -54,11 +54,9 @@ impl Service for RecieveEvent {
             (&Method::Post, "/") => {
                 Box::new(req.body().concat2().and_then(|data| {
                     let v: RequestData = serde_json::from_slice(&data).unwrap();
-                    if v.event_type.id == 6 {
-                        println!("!");
+                    if v.event_type.id == 11 {
+                        println!("Hit!");
                         send("http://127.0.0.1:5000/".parse::<hyper::Uri>().unwrap(), data)
-                    } else {
-                        println!(".")
                     }
                     futures::future::ok(Response::new())
                 }))
@@ -74,7 +72,7 @@ impl Service for RecieveEvent {
 }
 
 fn main() {
-    let addr = "127.0.0.1:6666".parse().unwrap();
+    let addr = "0.0.0.0:6666".parse().unwrap();
     let server = Http::new().bind(&addr, || Ok(RecieveEvent)).unwrap();
     server.run().unwrap();
 }
