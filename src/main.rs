@@ -3,15 +3,31 @@ extern crate futures;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_json;
+extern crate tokio_core;
 
 use std::str;
 
 use futures::future::Future;
 use futures::Stream;
 
-use hyper::{Method, StatusCode};
-use hyper::server::{Http, Request, Response, Service};
+use hyper::{Client, Method, Request, StatusCode};
+use hyper::header::{ContentLength, ContentType};
+use hyper::server::{Http, Response, Service};
 
+
+fn send(url: hyper::Uri, data: hyper::Chunk) {
+    let mut core = tokio_core::reactor::Core::new().unwrap();
+    let handle = core.handle();
+    let client = Client::configure().build(&handle);
+
+    let mut request = Request::new(Method::Post, url);
+    request.headers_mut().set(ContentType::json());
+    request.headers_mut().set(ContentLength(data.len() as u64));
+    request.set_body(data);
+
+    let work = client.request(request);
+    core.run(work).unwrap();
+}
 
 
 struct RecieveEvent;
@@ -40,6 +56,7 @@ impl Service for RecieveEvent {
                     let v: RequestData = serde_json::from_slice(&data).unwrap();
                     if v.event_type.id == 6 {
                         println!("!");
+                        send("http://127.0.0.1:5000/".parse::<hyper::Uri>().unwrap(), data)
                     } else {
                         println!(".")
                     }
